@@ -1,31 +1,23 @@
 package com.sefford.beauthentic.activities;
 
+import android.accounts.AccountAuthenticatorResponse;
+import android.accounts.AccountManager;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
-import android.app.LoaderManager.LoaderCallbacks;
-import android.content.CursorLoader;
-import android.content.Loader;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.ContactsContract;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
-import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import com.sefford.beauthentic.R;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -46,10 +38,30 @@ public class LoginActivity extends AppCompatActivity {
     @Bind(R.id.bt_login)
     View btLogin;
 
+    AccountAuthenticatorResponse mAccountAuthenticatorResponse = null;
+    Bundle mResultBundle = null;
+
+    /**
+     * Set the result that is to be sent as the result of the request that caused this
+     * Activity to be launched. If result is null or this method is never called then
+     * the request will be canceled.
+     *
+     * @param result this is returned as the result of the AbstractAccountAuthenticator request
+     */
+    public final void setAccountAuthenticatorResult(Bundle result) {
+        mResultBundle = result;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.screen_login);
+        mAccountAuthenticatorResponse =
+                getIntent().getParcelableExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE);
+
+        if (mAccountAuthenticatorResponse != null) {
+            mAccountAuthenticatorResponse.onRequestContinued();
+        }
         // Set up the login form.
         ButterKnife.bind(this);
         etPassword.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -83,7 +95,6 @@ public class LoginActivity extends AppCompatActivity {
      * errors are presented and no actual login attempt is made.
      */
     void attemptLogin() {
-
         // Reset errors.
         etUsername.setError(null);
         etPassword.setError(null);
@@ -166,6 +177,23 @@ public class LoginActivity extends AppCompatActivity {
             pbProgress.setVisibility(show ? View.VISIBLE : View.GONE);
             vLoginForm.setVisibility(show ? View.GONE : View.VISIBLE);
         }
+    }
+
+    /**
+     * Sends the result or a Constants.ERROR_CODE_CANCELED error if a result isn't present.
+     */
+    public void finish() {
+        if (mAccountAuthenticatorResponse != null) {
+            // send the result bundle back if set, otherwise send an error.
+            if (mResultBundle != null) {
+                mAccountAuthenticatorResponse.onResult(mResultBundle);
+            } else {
+                mAccountAuthenticatorResponse.onError(AccountManager.ERROR_CODE_CANCELED,
+                        "canceled");
+            }
+            mAccountAuthenticatorResponse = null;
+        }
+        super.finish();
     }
 }
 
