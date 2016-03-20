@@ -8,6 +8,7 @@ import android.accounts.NetworkErrorException;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 
 import com.sefford.beauthentic.activities.LoginActivity;
 
@@ -47,12 +48,42 @@ public class AuthenticAuthenticator extends AbstractAccountAuthenticator {
         bundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
         bundle.putString(AccountManager.KEY_ACCOUNT_TYPE, ACCOUNT_TYPE);
         bundle.putBoolean(AccountManager.KEY_BOOLEAN_RESULT, EXPECTED_USERNAME.equals(account.name) && EXPECTED_PASSWORD.equals(options.getString(EXTRA_PASSWORD)));
+        bundle.putString(AccountManager.KEY_AUTHTOKEN, AUTH_TOKEN);
         return bundle;
     }
 
     @Override
     public Bundle getAuthToken(AccountAuthenticatorResponse response, Account account, String authTokenType, Bundle options) throws NetworkErrorException {
-        return null;
+        final AccountManager am = AccountManager.get(context);
+        String authToken = am.peekAuthToken(account, authTokenType);
+
+        // The token has been invalidated but we have the password
+        if (TextUtils.isEmpty(authToken) && !TextUtils.isEmpty(am.getPassword(account))) {
+            final Bundle data = new Bundle();
+            data.putString(EXTRA_PASSWORD, am.getPassword(account));
+
+            // In this case we try to re-sign in to obtain the authtoken
+            final Bundle results = confirmCredentials(response, account, data);
+
+            // If we succeeded we refresh the token and return the results
+            if (results.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)) {
+                am.setAuthToken(account, authTokenType, results.getString(AccountManager.KEY_AUTHTOKEN));
+                return results;
+            } else {
+                // Otherwise seems like username or password changed and we need to re-input credentials
+                return addAccount(response, ACCOUNT_TYPE, authTokenType, null, options);
+            }
+        } else if (TextUtils.isEmpty(authToken) && TextUtils.isEmpty(am.getPassword(account))) {
+            // If we do not have the password, we cannot re-log in and we need to re-input credentials
+            return addAccount(response, ACCOUNT_TYPE, null, null, options);
+        }
+
+        // If the invalidation performs properly, then we're good to go
+        final Bundle bundle = new Bundle();
+        bundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
+        bundle.putString(AccountManager.KEY_ACCOUNT_TYPE, ACCOUNT_TYPE);
+        bundle.putString(AccountManager.KEY_AUTHTOKEN, authToken);
+        return bundle;
     }
 
     @Override
