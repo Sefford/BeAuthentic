@@ -18,6 +18,7 @@ import com.sefford.beauthentic.activities.LoginActivity;
 public class AuthenticAuthenticator extends AbstractAccountAuthenticator {
 
     public static final String ACCOUNT_TYPE = "com.sefford.beauthentic";
+    public static final String AUTHTOKEN_TYPE = "beauthentic";
     public static final String EXPECTED_USERNAME = "jtkirk";
     public static final String EXPECTED_PASSWORD = "kmaru";
     private static final String AUTH_TOKEN = "enterprise";
@@ -75,7 +76,7 @@ public class AuthenticAuthenticator extends AbstractAccountAuthenticator {
             }
         } else if (TextUtils.isEmpty(authToken) && TextUtils.isEmpty(am.getPassword(account))) {
             // If we do not have the password, we cannot re-log in and we need to re-input credentials
-            return addAccount(response, ACCOUNT_TYPE, null, null, options);
+            return addAccount(response, ACCOUNT_TYPE, AuthenticAuthenticator.AUTHTOKEN_TYPE, null, options);
         }
 
         // If the invalidation performs properly, then we're good to go

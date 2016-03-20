@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">BeAuthentic</string>
-    
+
     <!-- Strings related to login -->
     <string name="prompt_username">Username</string>
     <string name="prompt_password">Password</string>
@@ -9,4 +9,8 @@
     <string name="error_invalid_password">This password is too short</string>
     <string name="error_incorrect_password">This password is incorrect</string>
     <string name="error_field_required">This field is required</string>
+    <string name="error_invalid_credentials">Invalid credentials.</string>
+    <string name="error_operation_cancelled">Login was cancelled</string>
+    <string name="error_not_connected_to_internet">We could not reach auth servers.</string>
+    <string name="authentication_successful">Authentication successful</string>
 </resources>

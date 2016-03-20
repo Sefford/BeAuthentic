@@ -1,12 +1,18 @@
 package com.sefford.beauthentic.activities;
 
+import android.accounts.Account;
 import android.accounts.AccountAuthenticatorResponse;
 import android.accounts.AccountManager;
+import android.accounts.AccountManagerCallback;
+import android.accounts.AccountManagerFuture;
+import android.accounts.AuthenticatorException;
+import android.accounts.OperationCanceledException;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.KeyEvent;
@@ -18,6 +24,9 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.sefford.beauthentic.R;
+import com.sefford.beauthentic.auth.AuthenticAuthenticator;
+
+import java.io.IOException;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -132,7 +141,37 @@ public class LoginActivity extends AppCompatActivity {
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             showProgress(true);
+            performLogin();
         }
+    }
+
+    void performLogin() {
+        final AccountManager am = AccountManager.get(this);
+        final Bundle data = new Bundle();
+        data.putString(AuthenticAuthenticator.EXTRA_PASSWORD, etPassword.getText().toString());
+        final Account account = new Account(etUsername.getText().toString(), AuthenticAuthenticator.ACCOUNT_TYPE);
+        am.confirmCredentials(account, data, null, new AccountManagerCallback<Bundle>() {
+            @Override
+            public void run(AccountManagerFuture<Bundle> future) {
+                try {
+                    showProgress(false);
+                    final Bundle result = future.getResult();
+                    if (result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)) {
+                        am.addAccountExplicitly(account, etPassword.getText().toString(), Bundle.EMPTY);
+                        am.setAuthToken(account, AuthenticAuthenticator.AUTHTOKEN_TYPE, result.getString(AccountManager.KEY_AUTHTOKEN));
+                        Snackbar.make(vLoginForm, R.string.authentication_successful, Snackbar.LENGTH_LONG).show();
+                    } else {
+                        Snackbar.make(vLoginForm, R.string.error_invalid_credentials, Snackbar.LENGTH_LONG).show();
+                    }
+                } catch (OperationCanceledException e) {
+                    Snackbar.make(vLoginForm, R.string.error_operation_cancelled, Snackbar.LENGTH_LONG).show();
+                } catch (IOException e) {
+                    Snackbar.make(vLoginForm, R.string.error_not_connected_to_internet, Snackbar.LENGTH_LONG).show();
+                } catch (AuthenticatorException e) {
+                    Snackbar.make(vLoginForm, R.string.error_invalid_credentials, Snackbar.LENGTH_LONG).show();
+                }
+            }
+        }, null);
     }
 
     boolean isUsernameValid(String email) {
