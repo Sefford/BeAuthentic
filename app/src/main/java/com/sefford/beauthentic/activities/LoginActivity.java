@@ -10,6 +10,7 @@ import android.accounts.OperationCanceledException;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
@@ -159,7 +160,8 @@ public class LoginActivity extends AppCompatActivity {
                     if (result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)) {
                         am.addAccountExplicitly(account, etPassword.getText().toString(), Bundle.EMPTY);
                         am.setAuthToken(account, AuthenticAuthenticator.AUTHTOKEN_TYPE, result.getString(AccountManager.KEY_AUTHTOKEN));
-                        Snackbar.make(vLoginForm, R.string.authentication_successful, Snackbar.LENGTH_LONG).show();
+                        Intent intent = new Intent(getApplicationContext(), LoggedActivity.class);
+                        startActivity(intent);
                     } else {
                         Snackbar.make(vLoginForm, R.string.error_invalid_credentials, Snackbar.LENGTH_LONG).show();
                     }

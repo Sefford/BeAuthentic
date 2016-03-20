@@ -13,4 +13,11 @@
     <string name="error_operation_cancelled">Login was cancelled</string>
     <string name="error_not_connected_to_internet">We could not reach auth servers.</string>
     <string name="authentication_successful">Authentication successful</string>
+    <string name="refresh_authtoken">Refresh authtoken</string>
+    <string name="invalidate_authtoken">Invalidate Authtoken</string>
+    <string name="forget_password">Forget password</string>
+    <string name="logout">Logout</string>
+    <string name="status_logged">Perfectly logged</string>
+    <string name="status_invalidated">Authtoken Invalidated</string>
+    <string name="status_forgot">Password and Authtoken invalidated</string>
 </resources>
