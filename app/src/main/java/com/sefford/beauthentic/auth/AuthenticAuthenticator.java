@@ -16,6 +16,13 @@ import com.sefford.beauthentic.activities.LoginActivity;
  */
 public class AuthenticAuthenticator extends AbstractAccountAuthenticator {
 
+    public static final String ACCOUNT_TYPE = "com.sefford.beauthentic";
+    public static final String EXPECTED_USERNAME = "jtkirk";
+    public static final String EXPECTED_PASSWORD = "kmaru";
+    private static final String AUTH_TOKEN = "enterprise";
+
+    public static final String EXTRA_PASSWORD = "extra_password";
+
     final Context context;
 
     public AuthenticAuthenticator(Context context) {
@@ -23,6 +30,7 @@ public class AuthenticAuthenticator extends AbstractAccountAuthenticator {
         this.context = context;
     }
 
+    // Launches the Authentication Activity (LoginActivity in this example)
     @Override
     public Bundle addAccount(AccountAuthenticatorResponse response, String accountType, String authTokenType, String[] requiredFeatures, Bundle options) throws NetworkErrorException {
         final Intent intent = new Intent(context, LoginActivity.class);
@@ -32,18 +40,23 @@ public class AuthenticAuthenticator extends AbstractAccountAuthenticator {
         return data;
     }
 
-    @Override
-    public Bundle editProperties(AccountAuthenticatorResponse response, String accountType) {
-        return null;
-    }
-
+    // Actually performs the Login
     @Override
     public Bundle confirmCredentials(AccountAuthenticatorResponse response, Account account, Bundle options) throws NetworkErrorException {
-        return null;
+        final Bundle bundle = new Bundle();
+        bundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
+        bundle.putString(AccountManager.KEY_ACCOUNT_TYPE, ACCOUNT_TYPE);
+        bundle.putBoolean(AccountManager.KEY_BOOLEAN_RESULT, EXPECTED_USERNAME.equals(account.name) && EXPECTED_PASSWORD.equals(options.getString(EXTRA_PASSWORD)));
+        return bundle;
     }
 
     @Override
     public Bundle getAuthToken(AccountAuthenticatorResponse response, Account account, String authTokenType, Bundle options) throws NetworkErrorException {
+        return null;
+    }
+
+    @Override
+    public Bundle editProperties(AccountAuthenticatorResponse response, String accountType) {
         return null;
     }
 
