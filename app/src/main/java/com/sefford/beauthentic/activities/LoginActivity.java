@@ -26,6 +26,7 @@ import android.widget.TextView;
 
 import com.sefford.beauthentic.R;
 import com.sefford.beauthentic.auth.AuthenticAuthenticator;
+import com.sefford.beauthentic.utils.Sessions;
 
 import java.io.IOException;
 
@@ -91,6 +92,14 @@ public class LoginActivity extends AppCompatActivity {
                 attemptLogin();
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (Sessions.isLogged(AccountManager.get(this))) {
+            login();
+        }
     }
 
     @Override
@@ -160,8 +169,7 @@ public class LoginActivity extends AppCompatActivity {
                     if (result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)) {
                         am.addAccountExplicitly(account, etPassword.getText().toString(), Bundle.EMPTY);
                         am.setAuthToken(account, AuthenticAuthenticator.AUTHTOKEN_TYPE, result.getString(AccountManager.KEY_AUTHTOKEN));
-                        Intent intent = new Intent(getApplicationContext(), LoggedActivity.class);
-                        startActivity(intent);
+                        login();
                     } else {
                         Snackbar.make(vLoginForm, R.string.error_invalid_credentials, Snackbar.LENGTH_LONG).show();
                     }
@@ -174,6 +182,12 @@ public class LoginActivity extends AppCompatActivity {
                 }
             }
         }, null);
+    }
+
+    void login() {
+        finish();
+        Intent intent = new Intent(getApplicationContext(), LoggedActivity.class);
+        startActivity(intent);
     }
 
     boolean isUsernameValid(String email) {
