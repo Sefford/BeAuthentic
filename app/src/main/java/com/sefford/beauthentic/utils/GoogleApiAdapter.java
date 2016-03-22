@@ -8,11 +8,17 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.credentials.Credential;
+import com.google.android.gms.auth.api.credentials.CredentialRequest;
+import com.google.android.gms.auth.api.credentials.CredentialRequestResult;
+import com.google.android.gms.auth.api.credentials.IdentityProviders;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.OptionalPendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 
 /**
  * Created by sefford on 21/03/16.
@@ -20,6 +26,8 @@ import com.google.android.gms.common.api.OptionalPendingResult;
 public class GoogleApiAdapter implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     public static final int GOOGLE_SIGN_IN = 0x10;
+    public static final int REGISTER_CREDENTIAL = 0x11;
+    public static final int RETRIEVE_CREDENTIALS = 0x12;
 
     final GoogleSignInOptions gso;
 
@@ -41,18 +49,18 @@ public class GoogleApiAdapter implements GoogleApiClient.ConnectionCallbacks, Go
                 .build();
     }
 
-    public void connect() {
+    public void connect(GoogleApiClient.ConnectionCallbacks connectionCallbacks) {
         if (client != null) {
             client.connect();
-            client.registerConnectionCallbacks(this);
+            client.registerConnectionCallbacks(connectionCallbacks);
             client.registerConnectionFailedListener(this);
         }
     }
 
-    public void disconnect() {
+    public void disconnect(GoogleApiAdapter connectionCallbacks) {
         if (client != null) {
             client.disconnect();
-            client.unregisterConnectionCallbacks(this);
+            client.unregisterConnectionCallbacks(connectionCallbacks);
             client.unregisterConnectionFailedListener(this);
         }
     }
@@ -86,5 +94,25 @@ public class GoogleApiAdapter implements GoogleApiClient.ConnectionCallbacks, Go
 
     public static GoogleApiAdapter getInstance() {
         return INSTANCE;
+    }
+
+
+    public void requestCredentials(ResultCallback<? super CredentialRequestResult> callback) {
+        Auth.CredentialsApi.request(client, new CredentialRequest.Builder()
+                .setPasswordLoginSupported(true)
+                .setAccountTypes(IdentityProviders.GOOGLE)
+                .build()).setResultCallback(callback);
+    }
+
+    public void saveCredential(Credential credential, ResultCallback<? super Status> callback) {
+        if (isClientAvailable()) {
+            Auth.CredentialsApi.save(client, credential).setResultCallback(callback);
+        }
+    }
+
+    public void removeCallbacks(GoogleApiClient.ConnectionCallbacks callback) {
+        if (client != null) {
+            client.unregisterConnectionCallbacks(callback);
+        }
     }
 }

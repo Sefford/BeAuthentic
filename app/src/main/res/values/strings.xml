@@ -20,4 +20,5 @@
     <string name="status_logged">Perfectly logged</string>
     <string name="status_invalidated">Authtoken Invalidated</string>
     <string name="status_forgot">Password and Authtoken invalidated</string>
+    <string name="error_smartlock_failed">Smartlock Failed to retrieve credentials</string>
 </resources>

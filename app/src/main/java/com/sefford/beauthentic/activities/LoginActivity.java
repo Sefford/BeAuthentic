@@ -26,8 +26,11 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
@@ -39,9 +42,16 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.credentials.Credential;
+import com.google.android.gms.auth.api.credentials.CredentialRequestResult;
+import com.google.android.gms.auth.api.credentials.IdentityProviders;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.SignInButton;
+import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 import com.sefford.beauthentic.R;
 import com.sefford.beauthentic.auth.AuthenticAuthenticator;
 import com.sefford.beauthentic.utils.GoogleApiAdapter;
@@ -56,7 +66,7 @@ import butterknife.OnClick;
 /**
  * A login screen that offers login via email/password.
  */
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks {
 
     @Bind(R.id.et_email)
     AutoCompleteTextView etUsername;
@@ -93,7 +103,7 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.screen_login);
         handleAccountIntent(getIntent());
         googleApi.initialize(this);
-        googleApi.connect();
+        googleApi.connect(this);
         // Set up the login form.
         ButterKnife.bind(this);
         configureView();
@@ -134,16 +144,26 @@ public class LoginActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
-        if (requestCode == GoogleApiAdapter.GOOGLE_SIGN_IN) {
-            GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
-            handleSignInResult(result);
+        switch (requestCode) {
+            case GoogleApiAdapter.GOOGLE_SIGN_IN:
+                GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
+                handleSignInResult(result);
+                break;
+            case GoogleApiAdapter.REGISTER_CREDENTIAL:
+                login();
+                break;
+            case GoogleApiAdapter.RETRIEVE_CREDENTIALS:
+                if (resultCode == RESULT_OK) {
+                    onCredentialRetrieved((Credential) data.getParcelableExtra(Credential.EXTRA_KEY));
+                }
+                break;
         }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        googleApi.disconnect();
+        googleApi.disconnect(googleApi);
         ButterKnife.unbind(this);
     }
 
@@ -215,13 +235,14 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void run(AccountManagerFuture<Bundle> future) {
                 try {
-                    showProgress(false);
                     final Bundle result = future.getResult();
                     if (result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)) {
                         am.addAccountExplicitly(account, etPassword.getText().toString(), Bundle.EMPTY);
                         am.setAuthToken(account, AuthenticAuthenticator.AUTHTOKEN_TYPE, result.getString(AccountManager.KEY_AUTHTOKEN));
                         am.setUserData(account, AuthenticAuthenticator.EXTRA_TYPE, Integer.toString(AuthenticAuthenticator.Type.PASSWORD.ordinal()));
-                        login();
+                        googleApi.saveCredential(new Credential.Builder(account.name)
+                                        .setPassword(etPassword.getText().toString()).build(),
+                                new SmartlockCredentialCallback());
                     } else {
                         Snackbar.make(vLoginForm, R.string.error_invalid_credentials, Snackbar.LENGTH_LONG).show();
                     }
@@ -237,6 +258,8 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     void login() {
+        googleApi.removeCallbacks(this);
+        showProgress(false);
         finish();
         Intent intent = new Intent(getApplicationContext(), LoggedActivity.class);
         startActivity(intent);
@@ -255,6 +278,9 @@ public class LoginActivity extends AppCompatActivity {
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
     void showProgress(final boolean show) {
+        if (vLoginForm == null) {
+            return;
+        }
         // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
         // for very easy animations. If available, use these APIs to fade-in
         // the progress spinner.
@@ -266,7 +292,9 @@ public class LoginActivity extends AppCompatActivity {
                     show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    vLoginForm.setVisibility(show ? View.GONE : View.VISIBLE);
+                    if (vLoginForm != null) {
+                        vLoginForm.setVisibility(show ? View.GONE : View.VISIBLE);
+                    }
                 }
             });
 
@@ -275,14 +303,18 @@ public class LoginActivity extends AppCompatActivity {
                     show ? 1 : 0).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    pbProgress.setVisibility(show ? View.VISIBLE : View.GONE);
+                    if (vLoginForm != null) {
+                        pbProgress.setVisibility(show ? View.VISIBLE : View.GONE);
+                    }
                 }
             });
         } else {
-            // The ViewPropertyAnimator APIs are not available, so simply show
-            // and hide the relevant UI components.
-            pbProgress.setVisibility(show ? View.VISIBLE : View.GONE);
-            vLoginForm.setVisibility(show ? View.GONE : View.VISIBLE);
+            if (vLoginForm != null) {
+                // The ViewPropertyAnimator APIs are not available, so simply show
+                // and hide the relevant UI components.
+                pbProgress.setVisibility(show ? View.VISIBLE : View.GONE);
+                vLoginForm.setVisibility(show ? View.GONE : View.VISIBLE);
+            }
         }
     }
 
@@ -294,7 +326,7 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    void createGoogleAccount(GoogleSignInAccount acct) {
+    void createGoogleAccount(final GoogleSignInAccount acct) {
         final Account account = new Account(acct.getDisplayName(), AuthenticAuthenticator.ACCOUNT_TYPE);
         final AccountManager am = AccountManager.get(this);
         final Bundle data = new Bundle();
@@ -304,14 +336,17 @@ public class LoginActivity extends AppCompatActivity {
         am.confirmCredentials(account, data, null, new AccountManagerCallback<Bundle>() {
             @Override
             public void run(AccountManagerFuture<Bundle> future) {
-                showProgress(false);
                 try {
                     final Bundle result = future.getResult();
                     if (result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)) {
                         am.addAccountExplicitly(account, "", Bundle.EMPTY);
                         am.setAuthToken(account, AuthenticAuthenticator.AUTHTOKEN_TYPE, result.getString(AccountManager.KEY_AUTHTOKEN));
                         am.setUserData(account, AuthenticAuthenticator.EXTRA_TYPE, Integer.toString(AuthenticAuthenticator.Type.GOOGLE.ordinal()));
-                        login();
+                        googleApi.saveCredential(new Credential.Builder(acct.getEmail())
+                                .setAccountType(IdentityProviders.GOOGLE)
+                                .setName(acct.getDisplayName())
+                                .setProfilePictureUri(acct.getPhotoUrl())
+                                .build(), new SmartlockCredentialCallback());
                     }
                 } catch (OperationCanceledException e) {
                     Snackbar.make(vLoginForm, R.string.error_operation_cancelled, Snackbar.LENGTH_LONG).show();
@@ -340,6 +375,65 @@ public class LoginActivity extends AppCompatActivity {
             mAccountAuthenticatorResponse = null;
         }
         super.finish();
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        googleApi.requestCredentials(new ResultCallback<CredentialRequestResult>() {
+            @Override
+            public void onResult(@NonNull CredentialRequestResult result) {
+                if (result.getStatus().isSuccess()) {
+                    onCredentialRetrieved(result.getCredential());
+                } else if (result.getStatus().getStatusCode() != CommonStatusCodes.SIGN_IN_REQUIRED && result.getStatus().hasResolution()) {
+                    try {
+                        result.getStatus().startResolutionForResult(LoginActivity.this, GoogleApiAdapter.RETRIEVE_CREDENTIALS);
+                    } catch (IntentSender.SendIntentException e) {
+                        Snackbar.make(vLoginForm, R.string.error_smartlock_failed, Snackbar.LENGTH_LONG);
+                    }
+                }
+            }
+        });
+    }
+
+    void onCredentialRetrieved(Credential credential) {
+        if (IdentityProviders.GOOGLE.equals(credential.getAccountType())) {
+            final GoogleSignInResult result = googleApi.performSilentSignIn().get();
+            if (result.isSuccess()) {
+                createGoogleAccount(result.getSignInAccount());
+            } else if (result.getStatus().hasResolution()) {
+                try {
+                    result.getStatus().startResolutionForResult(this, GoogleApiAdapter.GOOGLE_SIGN_IN);
+                } catch (IntentSender.SendIntentException e) {
+                    Snackbar.make(vLoginForm, R.string.error_smartlock_failed, Snackbar.LENGTH_LONG);
+                }
+            }
+        } else {
+            etUsername.setText(credential.getId());
+            etPassword.setText(credential.getPassword());
+            attemptLogin();
+        }
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    class SmartlockCredentialCallback implements ResultCallback<Status> {
+
+        @Override
+        public void onResult(@NonNull Status status) {
+            if (status.isSuccess()) {
+                login();
+            } else if (status.hasResolution() && status.getStatusCode() != CommonStatusCodes.SIGN_IN_REQUIRED) {
+                try {
+                    status.startResolutionForResult(LoginActivity.this, GoogleApiAdapter.REGISTER_CREDENTIAL);
+                } catch (IntentSender.SendIntentException e) {
+                    // We couldn't register, but we have to keep on
+                    login();
+                }
+            }
+        }
     }
 }
 

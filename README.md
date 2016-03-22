@@ -57,6 +57,17 @@ sign in directly from the Authenticator.
 
 The interesting part here will be how we unify the different ways to log-in. Check `PasswordStrategy` and `GoogleStrategy`.
 
+# Branch "I am Smartlocked"
+
+In the third branch, we add even more complexity by suporting Smartlock for Passwords. 
+
+This branch does not add much logic to the app itself, and most of it is taken directly from the samples of the feature in Google, which
+is basically to retrieve and save the credentials. 
+
+The important points here is to remember that as with Google Sign-in the API heavily uses Intents to resolve abnormal situations with the
+credentials (multiple ones, not logged, etc...) and that in order to provide a seamless experience on the sign-in, we need to have it
+hooked with our current platform (AccountManaging + Google).
+
 ## Certificate 
 
 Data for the Certificate is as follows:

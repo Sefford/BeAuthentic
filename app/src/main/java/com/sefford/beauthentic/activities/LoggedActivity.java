@@ -55,7 +55,7 @@ public class LoggedActivity extends AppCompatActivity {
         setContentView(R.layout.screen_logged);
         am = AccountManager.get(getApplicationContext());
         ButterKnife.bind(this);
-        googleApi.connect();
+        googleApi.connect(googleApi);
     }
 
     @Override
