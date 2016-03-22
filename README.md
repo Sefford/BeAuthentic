@@ -45,6 +45,18 @@ produce an inmediate logout of the application, having to login again with the c
 Key classes here are `AuthenticAuthenticator`, `AuthenticatorService`, `Sessions` and `account_authenticator.xml`. Also note how the Authenticator is declared
 on `AndroidManifest.xml`.
 
+## Branch "Let me Google this login for you"
+ 
+In this second branch, we introduce an additional sign-in system to our app, Google Sign-in. This complicates a little the flow, as both Password and Google Sign in
+have totally different requirements when concerning the authentication method; Google Sign-in is a passwordless and we will need to carry the login type around the
+app.
+
+We added a Strategy pattern for our Authenticator. This a purely design decision, because we want to centralize authentication on the Authenticator itself, however
+Google authenticates the accounts on a way that is complicated to perfectly align with the Authenticator philosophy the first time. However, we can do a silent
+sign in directly from the Authenticator.
+
+The interesting part here will be how we unify the different ways to log-in. Check `PasswordStrategy` and `GoogleStrategy`.
+
 ## Certificate 
 
 Data for the Certificate is as follows:
