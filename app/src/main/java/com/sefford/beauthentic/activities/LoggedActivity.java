@@ -29,6 +29,7 @@ import android.widget.TextView;
 
 import com.sefford.beauthentic.R;
 import com.sefford.beauthentic.auth.AuthenticAuthenticator;
+import com.sefford.beauthentic.utils.GoogleApiAdapter;
 import com.sefford.beauthentic.utils.Sessions;
 
 import java.io.IOException;
@@ -46,6 +47,7 @@ public class LoggedActivity extends AppCompatActivity {
     TextView tvStatus;
 
     AccountManager am;
+    GoogleApiAdapter googleApi = GoogleApiAdapter.getInstance();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -53,13 +55,14 @@ public class LoggedActivity extends AppCompatActivity {
         setContentView(R.layout.screen_logged);
         am = AccountManager.get(getApplicationContext());
         ButterKnife.bind(this);
+        googleApi.connect();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         if (!Sessions.isLogged(am)) {
-            logout();
+            onLoggingOut();
         } else {
             getSupportActionBar().setTitle(Sessions.getAccount(am).name);
         }
@@ -94,7 +97,9 @@ public class LoggedActivity extends AppCompatActivity {
     @OnClick(R.id.bt_refresh)
     public void onGettingAuthToken() {
         if (Sessions.isLogged(am)) {
-            am.getAuthToken(Sessions.getAccount(am), AuthenticAuthenticator.AUTHTOKEN_TYPE, Bundle.EMPTY, true, new AccountManagerCallback<Bundle>() {
+            final Bundle data = new Bundle();
+            data.putInt(AuthenticAuthenticator.EXTRA_TYPE, Integer.valueOf(am.getUserData(Sessions.getAccount(am), AuthenticAuthenticator.EXTRA_TYPE)));
+            am.getAuthToken(Sessions.getAccount(am), AuthenticAuthenticator.AUTHTOKEN_TYPE, data, true, new AccountManagerCallback<Bundle>() {
                 @Override
                 public void run(AccountManagerFuture<Bundle> future) {
                     try {
@@ -103,7 +108,7 @@ public class LoggedActivity extends AppCompatActivity {
                             tvStatus.setText(R.string.status_logged);
                         } else {
                             // We would be returning a intent here to open Login Activity, so we do not care, actually
-                            logout();
+                            onLoggingOut();
                         }
                     } catch (OperationCanceledException e) {
                         e.printStackTrace();
@@ -114,6 +119,8 @@ public class LoggedActivity extends AppCompatActivity {
                     }
                 }
             }, null);
+        } else {
+            onLoggingOut();
         }
     }
 

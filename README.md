@@ -44,3 +44,11 @@ produce an inmediate logout of the application, having to login again with the c
 
 Key classes here are `AuthenticAuthenticator`, `AuthenticatorService`, `Sessions` and `account_authenticator.xml`. Also note how the Authenticator is declared
 on `AndroidManifest.xml`.
+
+## Certificate 
+
+Data for the Certificate is as follows:
+
+**Keystore Pass:** BeAuthentic
+**Keystore Alias:** BeAuthenticSigning
+**Key Pass:** BeAuthentic

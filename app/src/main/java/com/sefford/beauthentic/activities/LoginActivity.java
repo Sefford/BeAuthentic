@@ -33,20 +33,25 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInResult;
+import com.google.android.gms.common.SignInButton;
 import com.sefford.beauthentic.R;
 import com.sefford.beauthentic.auth.AuthenticAuthenticator;
+import com.sefford.beauthentic.utils.GoogleApiAdapter;
 import com.sefford.beauthentic.utils.Sessions;
 
 import java.io.IOException;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 
 /**
  * A login screen that offers login via email/password.
@@ -63,9 +68,13 @@ public class LoginActivity extends AppCompatActivity {
     View vLoginForm;
     @Bind(R.id.bt_login)
     View btLogin;
+    @Bind(R.id.bt_google_sign)
+    SignInButton btGoogleSign;
 
     AccountAuthenticatorResponse mAccountAuthenticatorResponse = null;
     Bundle mResultBundle = null;
+    GoogleApiAdapter googleApi = GoogleApiAdapter.getInstance();
+
 
     /**
      * Set the result that is to be sent as the result of the request that caused this
@@ -82,14 +91,15 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.screen_login);
-        mAccountAuthenticatorResponse =
-                getIntent().getParcelableExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE);
-
-        if (mAccountAuthenticatorResponse != null) {
-            mAccountAuthenticatorResponse.onRequestContinued();
-        }
+        handleAccountIntent(getIntent());
+        googleApi.initialize(this);
+        googleApi.connect();
         // Set up the login form.
         ButterKnife.bind(this);
+        configureView();
+    }
+
+    void configureView() {
         etPassword.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
@@ -100,13 +110,16 @@ public class LoginActivity extends AppCompatActivity {
                 return false;
             }
         });
+        btGoogleSign.setSize(SignInButton.SIZE_STANDARD);
+    }
 
-        btLogin.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                attemptLogin();
-            }
-        });
+    void handleAccountIntent(Intent intent) {
+        mAccountAuthenticatorResponse =
+                intent.getParcelableExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE);
+
+        if (mAccountAuthenticatorResponse != null) {
+            mAccountAuthenticatorResponse.onRequestContinued();
+        }
     }
 
     @Override
@@ -118,9 +131,31 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
+        if (requestCode == GoogleApiAdapter.GOOGLE_SIGN_IN) {
+            GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
+            handleSignInResult(result);
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
+        googleApi.disconnect();
         ButterKnife.unbind(this);
+    }
+
+    @OnClick(R.id.bt_login)
+    public void onLoginClicked() {
+        attemptLogin();
+    }
+
+    @OnClick(R.id.bt_google_sign)
+    public void onGoogleLoginClicked() {
+        showProgress(true);
+        googleApi.performGoogleSignIn(this);
     }
 
     /**
@@ -174,6 +209,7 @@ public class LoginActivity extends AppCompatActivity {
         final AccountManager am = AccountManager.get(this);
         final Bundle data = new Bundle();
         data.putString(AuthenticAuthenticator.EXTRA_PASSWORD, etPassword.getText().toString());
+        data.putInt(AuthenticAuthenticator.EXTRA_TYPE, AuthenticAuthenticator.Type.PASSWORD.ordinal());
         final Account account = new Account(etUsername.getText().toString(), AuthenticAuthenticator.ACCOUNT_TYPE);
         am.confirmCredentials(account, data, null, new AccountManagerCallback<Bundle>() {
             @Override
@@ -184,6 +220,7 @@ public class LoginActivity extends AppCompatActivity {
                     if (result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)) {
                         am.addAccountExplicitly(account, etPassword.getText().toString(), Bundle.EMPTY);
                         am.setAuthToken(account, AuthenticAuthenticator.AUTHTOKEN_TYPE, result.getString(AccountManager.KEY_AUTHTOKEN));
+                        am.setUserData(account, AuthenticAuthenticator.EXTRA_TYPE, Integer.toString(AuthenticAuthenticator.Type.PASSWORD.ordinal()));
                         login();
                     } else {
                         Snackbar.make(vLoginForm, R.string.error_invalid_credentials, Snackbar.LENGTH_LONG).show();
@@ -248,6 +285,45 @@ public class LoginActivity extends AppCompatActivity {
             vLoginForm.setVisibility(show ? View.GONE : View.VISIBLE);
         }
     }
+
+    void handleSignInResult(GoogleSignInResult result) {
+        if (result.isSuccess()) {
+            // Signed in successfully, show authenticated UI.
+            GoogleSignInAccount acct = result.getSignInAccount();
+            createGoogleAccount(acct);
+        }
+    }
+
+    void createGoogleAccount(GoogleSignInAccount acct) {
+        final Account account = new Account(acct.getDisplayName(), AuthenticAuthenticator.ACCOUNT_TYPE);
+        final AccountManager am = AccountManager.get(this);
+        final Bundle data = new Bundle();
+        data.putInt(AuthenticAuthenticator.EXTRA_TYPE, AuthenticAuthenticator.Type.GOOGLE.ordinal());
+        data.putString(AccountManager.KEY_ACCOUNT_NAME, acct.getDisplayName());
+        data.putString(AccountManager.KEY_AUTHTOKEN, acct.getIdToken());
+        am.confirmCredentials(account, data, null, new AccountManagerCallback<Bundle>() {
+            @Override
+            public void run(AccountManagerFuture<Bundle> future) {
+                showProgress(false);
+                try {
+                    final Bundle result = future.getResult();
+                    if (result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)) {
+                        am.addAccountExplicitly(account, "", Bundle.EMPTY);
+                        am.setAuthToken(account, AuthenticAuthenticator.AUTHTOKEN_TYPE, result.getString(AccountManager.KEY_AUTHTOKEN));
+                        am.setUserData(account, AuthenticAuthenticator.EXTRA_TYPE, Integer.toString(AuthenticAuthenticator.Type.GOOGLE.ordinal()));
+                        login();
+                    }
+                } catch (OperationCanceledException e) {
+                    Snackbar.make(vLoginForm, R.string.error_operation_cancelled, Snackbar.LENGTH_LONG).show();
+                } catch (IOException e) {
+                    Snackbar.make(vLoginForm, R.string.error_not_connected_to_internet, Snackbar.LENGTH_LONG).show();
+                } catch (AuthenticatorException e) {
+                    Snackbar.make(vLoginForm, R.string.error_invalid_credentials, Snackbar.LENGTH_LONG).show();
+                }
+            }
+        }, null);
+    }
+
 
     /**
      * Sends the result or a Constants.ERROR_CODE_CANCELED error if a result isn't present.

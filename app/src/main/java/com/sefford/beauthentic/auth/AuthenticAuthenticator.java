@@ -26,6 +26,8 @@ import android.os.Bundle;
 import android.text.TextUtils;
 
 import com.sefford.beauthentic.activities.LoginActivity;
+import com.sefford.beauthentic.auth.strategies.GoogleStrategy;
+import com.sefford.beauthentic.auth.strategies.PasswordStrategy;
 
 /**
  * Created by sefford on 20/03/16.
@@ -34,11 +36,10 @@ public class AuthenticAuthenticator extends AbstractAccountAuthenticator {
 
     public static final String ACCOUNT_TYPE = "com.sefford.beauthentic";
     public static final String AUTHTOKEN_TYPE = "beauthentic";
-    public static final String EXPECTED_USERNAME = "jtkirk";
-    public static final String EXPECTED_PASSWORD = "kmaru";
-    private static final String AUTH_TOKEN = "enterprise";
 
     public static final String EXTRA_PASSWORD = "extra_password";
+    public static final String EXTRA_AUTH = "extra_auth";
+    public static final String EXTRA_TYPE = "extra_type";
 
     final Context context;
 
@@ -60,12 +61,7 @@ public class AuthenticAuthenticator extends AbstractAccountAuthenticator {
     // Actually performs the Login
     @Override
     public Bundle confirmCredentials(AccountAuthenticatorResponse response, Account account, Bundle options) throws NetworkErrorException {
-        final Bundle bundle = new Bundle();
-        bundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
-        bundle.putString(AccountManager.KEY_ACCOUNT_TYPE, ACCOUNT_TYPE);
-        bundle.putBoolean(AccountManager.KEY_BOOLEAN_RESULT, EXPECTED_USERNAME.equals(account.name) && EXPECTED_PASSWORD.equals(options.getString(EXTRA_PASSWORD)));
-        bundle.putString(AccountManager.KEY_AUTHTOKEN, AUTH_TOKEN);
-        return bundle;
+        return selectLoginStrategy(Type.values()[options.getInt(EXTRA_TYPE)]).confirmCredential(response, account, options);
     }
 
     @Override
@@ -74,8 +70,10 @@ public class AuthenticAuthenticator extends AbstractAccountAuthenticator {
         String authToken = am.peekAuthToken(account, authTokenType);
 
         // The token has been invalidated but we have the password
-        if (TextUtils.isEmpty(authToken) && !TextUtils.isEmpty(am.getPassword(account))) {
+        final Strategy strategy = selectLoginStrategy(Type.values()[options.getInt(EXTRA_TYPE)]);
+        if (TextUtils.isEmpty(authToken) && strategy.validatePassword(am.getPassword(account))) {
             final Bundle data = new Bundle();
+            data.putInt(EXTRA_TYPE, options.getInt(EXTRA_TYPE));
             data.putString(EXTRA_PASSWORD, am.getPassword(account));
 
             // In this case we try to re-sign in to obtain the authtoken
@@ -89,7 +87,7 @@ public class AuthenticAuthenticator extends AbstractAccountAuthenticator {
                 // Otherwise seems like username or password changed and we need to re-input credentials
                 return addAccount(response, ACCOUNT_TYPE, authTokenType, null, options);
             }
-        } else if (TextUtils.isEmpty(authToken) && TextUtils.isEmpty(am.getPassword(account))) {
+        } else if (TextUtils.isEmpty(authToken) && !strategy.validatePassword(am.getPassword(account))) {
             // If we do not have the password, we cannot re-log in and we need to re-input credentials
             return addAccount(response, ACCOUNT_TYPE, AuthenticAuthenticator.AUTHTOKEN_TYPE, null, options);
         }
@@ -120,5 +118,29 @@ public class AuthenticAuthenticator extends AbstractAccountAuthenticator {
     @Override
     public Bundle hasFeatures(AccountAuthenticatorResponse response, Account account, String[] features) throws NetworkErrorException {
         return null;
+    }
+
+    Strategy selectLoginStrategy(Type type) {
+        switch (type) {
+            case PASSWORD:
+                return new PasswordStrategy();
+            case GOOGLE:
+            default:
+                return new GoogleStrategy();
+        }
+    }
+
+    public enum Type {
+        PASSWORD,
+        GOOGLE
+    }
+
+
+    public interface Strategy {
+
+        Bundle confirmCredential(AccountAuthenticatorResponse response, Account account, Bundle data);
+
+        boolean validatePassword(String password);
+
     }
 }
