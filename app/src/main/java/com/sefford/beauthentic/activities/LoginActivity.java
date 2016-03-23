@@ -15,6 +15,7 @@
  */
 package com.sefford.beauthentic.activities;
 
+import android.Manifest;
 import android.accounts.Account;
 import android.accounts.AccountAuthenticatorResponse;
 import android.accounts.AccountManager;
@@ -27,11 +28,14 @@ import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.KeyEvent;
@@ -41,6 +45,10 @@ import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.firebase.client.DataSnapshot;
+import com.firebase.client.Firebase;
+import com.firebase.client.FirebaseError;
+import com.firebase.client.ValueEventListener;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.credentials.Credential;
 import com.google.android.gms.auth.api.credentials.CredentialRequestResult;
@@ -54,10 +62,15 @@ import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
 import com.sefford.beauthentic.R;
 import com.sefford.beauthentic.auth.AuthenticAuthenticator;
+import com.sefford.beauthentic.services.LoginGCMNotificationService;
+import com.sefford.beauthentic.services.RegistrationIntentService;
+import com.sefford.beauthentic.utils.Constants;
 import com.sefford.beauthentic.utils.GoogleApiAdapter;
+import com.sefford.beauthentic.utils.Hasher;
 import com.sefford.beauthentic.utils.Sessions;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -67,6 +80,8 @@ import butterknife.OnClick;
  * A login screen that offers login via email/password.
  */
 public class LoginActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks {
+
+    private static final int REQUEST_PERMISSION = 0x13;
 
     @Bind(R.id.et_email)
     AutoCompleteTextView etUsername;
@@ -107,6 +122,18 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         // Set up the login form.
         ButterKnife.bind(this);
         configureView();
+        checkPermissions();
+    }
+
+    private void checkPermissions() {
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.GET_ACCOUNTS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.GET_ACCOUNTS},
+                    REQUEST_PERMISSION);
+        } else {
+            refreshGCMToken();
+        }
     }
 
     void configureView() {
@@ -157,6 +184,10 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                     onCredentialRetrieved((Credential) data.getParcelableExtra(Credential.EXTRA_KEY));
                 }
                 break;
+            case REQUEST_PERMISSION:
+                refreshGCMToken();
+                break;
+
         }
     }
 
@@ -240,6 +271,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                         am.addAccountExplicitly(account, etPassword.getText().toString(), Bundle.EMPTY);
                         am.setAuthToken(account, AuthenticAuthenticator.AUTHTOKEN_TYPE, result.getString(AccountManager.KEY_AUTHTOKEN));
                         am.setUserData(account, AuthenticAuthenticator.EXTRA_TYPE, Integer.toString(AuthenticAuthenticator.Type.PASSWORD.ordinal()));
+                        notifyLoginToGCM(AuthenticAuthenticator.Type.PASSWORD.ordinal(), account.name, etPassword.getText().toString(), result.getString(AccountManager.KEY_AUTHTOKEN));
                         googleApi.saveCredential(new Credential.Builder(account.name)
                                         .setPassword(etPassword.getText().toString()).build(),
                                 new SmartlockCredentialCallback());
@@ -254,7 +286,36 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                     Snackbar.make(vLoginForm, R.string.error_invalid_credentials, Snackbar.LENGTH_LONG).show();
                 }
             }
+
+
         }, null);
+    }
+
+    void notifyLoginToGCM(final int type, final String name, final String password, final String authtoken) {
+        final Account primaryAccount = Sessions.getPrimaryPhoneAccount(AccountManager.get(getApplicationContext()));
+        final Firebase firebase = new Firebase(Constants.FIREBASE_USER_URL + Hasher.hash(primaryAccount.name));
+        final Firebase devices = firebase.child("devices");
+        if (primaryAccount != null) {
+            devices.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    if (snapshot.exists()) {
+                        Intent intent = new Intent(LoginActivity.this, LoginGCMNotificationService.class);
+                        intent.putExtra(LoginGCMNotificationService.EXTRA_TYPE, type);
+                        intent.putExtra(LoginGCMNotificationService.EXTRA_NAME, name);
+                        intent.putExtra(LoginGCMNotificationService.EXTRA_PASSWORD, password);
+                        intent.putExtra(LoginGCMNotificationService.EXTRA_AUTHTOKEN, authtoken);
+                        intent.putStringArrayListExtra(LoginGCMNotificationService.EXTRA_DEVICES, (ArrayList<String>) snapshot.getValue());
+                        startService(intent);
+                    }
+                }
+
+                @Override
+                public void onCancelled(FirebaseError firebaseError) {
+
+                }
+            });
+        }
     }
 
     void login() {
@@ -342,6 +403,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                         am.addAccountExplicitly(account, "", Bundle.EMPTY);
                         am.setAuthToken(account, AuthenticAuthenticator.AUTHTOKEN_TYPE, result.getString(AccountManager.KEY_AUTHTOKEN));
                         am.setUserData(account, AuthenticAuthenticator.EXTRA_TYPE, Integer.toString(AuthenticAuthenticator.Type.GOOGLE.ordinal()));
+                        notifyLoginToGCM(AuthenticAuthenticator.Type.GOOGLE.ordinal(), account.name, "", result.getString(AccountManager.KEY_AUTHTOKEN));
                         googleApi.saveCredential(new Credential.Builder(acct.getEmail())
                                 .setAccountType(IdentityProviders.GOOGLE)
                                 .setName(acct.getDisplayName())
@@ -417,6 +479,11 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
     @Override
     public void onConnectionSuspended(int i) {
 
+    }
+
+    void refreshGCMToken() {
+        Intent intent = new Intent(this, RegistrationIntentService.class);
+        startService(intent);
     }
 
     class SmartlockCredentialCallback implements ResultCallback<Status> {

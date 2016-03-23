@@ -25,11 +25,20 @@ import com.sefford.beauthentic.auth.AuthenticAuthenticator;
  */
 public class Sessions {
 
+    private static final String GOOGLE_ACCOUNT = "com.google";
+
+    private Sessions() {
+    }
+
     public static final boolean isLogged(AccountManager accountManager) {
         return accountManager.getAccountsByType(AuthenticAuthenticator.ACCOUNT_TYPE).length > 0;
     }
 
     public static final Account getAccount(AccountManager accountManager) {
         return isLogged(accountManager) ? accountManager.getAccountsByType(AuthenticAuthenticator.ACCOUNT_TYPE)[0] : null;
+    }
+
+    public static final Account getPrimaryPhoneAccount(AccountManager accountManager) {
+        return accountManager.getAccountsByType(GOOGLE_ACCOUNT).length > 0 ? accountManager.getAccountsByType(GOOGLE_ACCOUNT)[0] : null;
     }
 }

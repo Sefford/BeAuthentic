@@ -30,6 +30,12 @@ android {
     }
     productFlavors {
     }
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE-FIREBASE.txt'
+        exclude 'META-INF/NOTICE'
+    }
 }
 
 dependencies {
@@ -37,6 +43,12 @@ dependencies {
     compile 'com.android.support:appcompat-v7:23.2.1'
     compile 'com.android.support:design:23.2.1'
     compile 'com.google.android.gms:play-services-auth:8.4.0'
+    compile 'com.google.android.gms:play-services-gcm:8.4.0'
+    compile 'com.firebase:firebase-client-android:2.5.1+'
+    compile 'com.squareup.retrofit2:retrofit:2.0.0'
+    compile 'com.squareup.okhttp3:logging-interceptor:3.2.0'
+    compile 'com.squareup.retrofit2:converter-gson:2.0.0'
+    compile 'com.google.code.gson:gson:2.6.2'
 }
 
 apply plugin: 'com.google.gms.google-services'
