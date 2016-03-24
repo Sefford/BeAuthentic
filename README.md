@@ -1,3 +1,5 @@
+<img src="art/hi_res_logo_512.png" width="256" align="middle">
+
 # BeAuthentic
 
 Delightful First-Party Authentication Demo repository
@@ -83,6 +85,8 @@ After the credentials are validated we will retrieve the list of available devic
 
 The remaining devices will receive the credentials and will act accordingly. The key elements are `PushService`, `GCMNotificationService`.
 
+![Single Sign-in flow](art/single_sign_in.jpg)
+
 ### SyncAdapter
 
 Now that we have supported multidevice and multiplatform, probably we will be interested on keeping all our sessions in sync. For this purpose,
@@ -100,7 +104,9 @@ and a small modification to `LoggedActivity` and `PushService` is where the inte
 Data for the Certificate is as follows:
 
 **Keystore Pass:** BeAuthentic
+
 **Keystore Alias:** BeAuthenticSigning
+
 **Key Pass:** BeAuthentic
 
 ## License
