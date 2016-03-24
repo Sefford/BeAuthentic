@@ -24,7 +24,9 @@ import com.sefford.beauthentic.R;
 import java.io.IOException;
 
 /**
- * Created by sefford on 23/03/16.
+ * Small util to retrieve the Token
+ *
+ * @author Saúl Díaz González <sefford@gmail.com>
  */
 public class GCMUtils {
 

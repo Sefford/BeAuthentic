@@ -28,7 +28,9 @@ import com.sefford.beauthentic.auth.AuthenticAuthenticator;
 import com.sefford.beauthentic.utils.GoogleApiAdapter;
 
 /**
- * Created by sefford on 22/03/16.
+ * Strategy for handling Google Sign-in authentication
+ *
+ * @author Saúl Díaz González <sefford@gmail.com>
  */
 public class GoogleStrategy implements AuthenticAuthenticator.Strategy {
 

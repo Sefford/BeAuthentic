@@ -25,7 +25,9 @@ import com.sefford.beauthentic.auth.AuthenticAuthenticator;
 import com.sefford.beauthentic.auth.AuthenticAuthenticator.Strategy;
 
 /**
- * Created by sefford on 22/03/16.
+ * Strategy to validate "jtkirk/kmaru" credentials
+ *
+ * @author Saúl Díaz González <sefford@gmail.com>
  */
 public class PasswordStrategy implements Strategy {
     public static final String EXPECTED_USERNAME = "jtkirk";

@@ -19,9 +19,11 @@ import com.google.gson.annotations.SerializedName;
 import com.sefford.beauthentic.services.LoginGCMNotificationService;
 
 /**
- * Created by sefford on 23/03/16.
+ * Payload to perform the Single Sign-in feature
+ *
+ * @author Saúl Díaz González <sefford@gmail.com>
  */
-public class Payload {
+public class LoginPayload {
 
     @SerializedName(LoginGCMNotificationService.EXTRA_TYPE)
     final int type;
@@ -33,7 +35,7 @@ public class Payload {
     final String authtoken;
 
 
-    public Payload(int type, String name, String password, String authtoken) {
+    public LoginPayload(int type, String name, String password, String authtoken) {
         this.type = type;
         this.name = name;
         this.password = password;

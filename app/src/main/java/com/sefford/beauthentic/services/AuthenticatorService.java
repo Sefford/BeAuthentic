@@ -24,6 +24,8 @@ import com.sefford.beauthentic.auth.AuthenticAuthenticator;
 /**
  * A bound Service that instantiates the authenticator
  * when started.
+ *
+ * @author Saúl Díaz González <sefford@gmail.com>
  */
 public class AuthenticatorService extends Service {
     // Instance field that stores the authenticator object

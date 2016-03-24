@@ -17,11 +17,16 @@ package com.sefford.beauthentic.utils;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.content.ContentResolver;
+import android.os.Bundle;
 
 import com.sefford.beauthentic.auth.AuthenticAuthenticator;
+import com.sefford.beauthentic.providers.MessageProvider;
 
 /**
- * Created by sefford on 20/03/16.
+ * Sessions utils adapter.
+ *
+ * @author Saúl Díaz González <sefford@gmail.com>
  */
 public class Sessions {
 
@@ -40,5 +45,16 @@ public class Sessions {
 
     public static final Account getPrimaryPhoneAccount(AccountManager accountManager) {
         return accountManager.getAccountsByType(GOOGLE_ACCOUNT).length > 0 ? accountManager.getAccountsByType(GOOGLE_ACCOUNT)[0] : null;
+    }
+
+    public static final void enableSyncing(Account newAccount, String authority) {
+        ContentResolver.setIsSyncable(newAccount, authority, 1);
+        ContentResolver.setSyncAutomatically(newAccount, authority, true);
+        ContentResolver.addPeriodicSync(newAccount, authority, Bundle.EMPTY, 60);
+    }
+
+    public static void addAccount(AccountManager am, Account account, String password, Bundle empty) {
+        am.addAccountExplicitly(account, password, empty);
+        enableSyncing(account, MessageProvider.AUTHORITY);
     }
 }

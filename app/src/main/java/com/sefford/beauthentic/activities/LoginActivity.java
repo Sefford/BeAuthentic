@@ -47,8 +47,6 @@ import android.widget.TextView;
 
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
-import com.firebase.client.FirebaseError;
-import com.firebase.client.ValueEventListener;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.credentials.Credential;
 import com.google.android.gms.auth.api.credentials.CredentialRequestResult;
@@ -62,6 +60,7 @@ import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
 import com.sefford.beauthentic.R;
 import com.sefford.beauthentic.auth.AuthenticAuthenticator;
+import com.sefford.beauthentic.callbacks.ValueEventListenerAdapter;
 import com.sefford.beauthentic.services.LoginGCMNotificationService;
 import com.sefford.beauthentic.services.RegistrationIntentService;
 import com.sefford.beauthentic.utils.Constants;
@@ -125,17 +124,6 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         checkPermissions();
     }
 
-    private void checkPermissions() {
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.GET_ACCOUNTS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.GET_ACCOUNTS},
-                    REQUEST_PERMISSION);
-        } else {
-            refreshGCMToken();
-        }
-    }
-
     void configureView() {
         etPassword.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -148,6 +136,17 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
             }
         });
         btGoogleSign.setSize(SignInButton.SIZE_STANDARD);
+    }
+
+    void checkPermissions() {
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.GET_ACCOUNTS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.GET_ACCOUNTS},
+                    REQUEST_PERMISSION);
+        } else {
+            refreshGCMToken();
+        }
     }
 
     void handleAccountIntent(Intent intent) {
@@ -170,8 +169,8 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
         switch (requestCode) {
+            // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
             case GoogleApiAdapter.GOOGLE_SIGN_IN:
                 GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
                 handleSignInResult(result);
@@ -268,7 +267,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                 try {
                     final Bundle result = future.getResult();
                     if (result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)) {
-                        am.addAccountExplicitly(account, etPassword.getText().toString(), Bundle.EMPTY);
+                        Sessions.addAccount(am, account, etPassword.getText().toString(), Bundle.EMPTY);
                         am.setAuthToken(account, AuthenticAuthenticator.AUTHTOKEN_TYPE, result.getString(AccountManager.KEY_AUTHTOKEN));
                         am.setUserData(account, AuthenticAuthenticator.EXTRA_TYPE, Integer.toString(AuthenticAuthenticator.Type.PASSWORD.ordinal()));
                         notifyLoginToGCM(AuthenticAuthenticator.Type.PASSWORD.ordinal(), account.name, etPassword.getText().toString(), result.getString(AccountManager.KEY_AUTHTOKEN));
@@ -289,33 +288,6 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
 
 
         }, null);
-    }
-
-    void notifyLoginToGCM(final int type, final String name, final String password, final String authtoken) {
-        final Account primaryAccount = Sessions.getPrimaryPhoneAccount(AccountManager.get(getApplicationContext()));
-        final Firebase firebase = new Firebase(Constants.FIREBASE_USER_URL + Hasher.hash(primaryAccount.name));
-        final Firebase devices = firebase.child("devices");
-        if (primaryAccount != null) {
-            devices.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot snapshot) {
-                    if (snapshot.exists()) {
-                        Intent intent = new Intent(LoginActivity.this, LoginGCMNotificationService.class);
-                        intent.putExtra(LoginGCMNotificationService.EXTRA_TYPE, type);
-                        intent.putExtra(LoginGCMNotificationService.EXTRA_NAME, name);
-                        intent.putExtra(LoginGCMNotificationService.EXTRA_PASSWORD, password);
-                        intent.putExtra(LoginGCMNotificationService.EXTRA_AUTHTOKEN, authtoken);
-                        intent.putStringArrayListExtra(LoginGCMNotificationService.EXTRA_DEVICES, (ArrayList<String>) snapshot.getValue());
-                        startService(intent);
-                    }
-                }
-
-                @Override
-                public void onCancelled(FirebaseError firebaseError) {
-
-                }
-            });
-        }
     }
 
     void login() {
@@ -379,6 +351,31 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         }
     }
 
+    void notifyLoginToGCM(final int type, final String name, final String password, final String authtoken) {
+        final Account primaryAccount = Sessions.getPrimaryPhoneAccount(AccountManager.get(getApplicationContext()));
+        if (primaryAccount == null) {
+            return;
+        }
+        final Firebase firebase = new Firebase(Constants.FIREBASE_USER_URL + Hasher.hash(primaryAccount.name));
+        final Firebase devices = firebase.child("devices");
+        if (primaryAccount != null) {
+            devices.addListenerForSingleValueEvent(new ValueEventListenerAdapter() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    if (snapshot.exists()) {
+                        Intent intent = new Intent(LoginActivity.this, LoginGCMNotificationService.class);
+                        intent.putExtra(LoginGCMNotificationService.EXTRA_TYPE, type);
+                        intent.putExtra(LoginGCMNotificationService.EXTRA_NAME, name);
+                        intent.putExtra(LoginGCMNotificationService.EXTRA_PASSWORD, password);
+                        intent.putExtra(LoginGCMNotificationService.EXTRA_AUTHTOKEN, authtoken);
+                        intent.putStringArrayListExtra(LoginGCMNotificationService.EXTRA_DEVICES, (ArrayList<String>) snapshot.getValue());
+                        startService(intent);
+                    }
+                }
+            });
+        }
+    }
+
     void handleSignInResult(GoogleSignInResult result) {
         if (result.isSuccess()) {
             // Signed in successfully, show authenticated UI.
@@ -400,7 +397,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                 try {
                     final Bundle result = future.getResult();
                     if (result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)) {
-                        am.addAccountExplicitly(account, "", Bundle.EMPTY);
+                        Sessions.addAccount(am, account, "", Bundle.EMPTY);
                         am.setAuthToken(account, AuthenticAuthenticator.AUTHTOKEN_TYPE, result.getString(AccountManager.KEY_AUTHTOKEN));
                         am.setUserData(account, AuthenticAuthenticator.EXTRA_TYPE, Integer.toString(AuthenticAuthenticator.Type.GOOGLE.ordinal()));
                         notifyLoginToGCM(AuthenticAuthenticator.Type.GOOGLE.ordinal(), account.name, "", result.getString(AccountManager.KEY_AUTHTOKEN));

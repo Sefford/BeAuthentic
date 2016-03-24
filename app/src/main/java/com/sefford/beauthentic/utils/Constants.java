@@ -15,14 +15,15 @@
  */
 package com.sefford.beauthentic.utils;
 
+/**
+ * Constants package
+ */
 public class Constants {
 
     public static final String FIREBASE_URL = "https://torrid-inferno-7798.firebaseio.com/";
     public static final String FIREBASE_USER_URL = FIREBASE_URL + "users/";
 
     public static final String SENT_TOKEN_TO_SERVER = "token_sent";
-    public static final String GCM_TOKEN = "gcm_token";
-    public static final String DEVICE_OWNER = "device_owner";
 
     public static final String REGISTRATION_COMPLETED_ACTION = "com.sefford.beauthentic.REGISTRATION_COMPLETED";
 

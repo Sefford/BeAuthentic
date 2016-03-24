@@ -30,7 +30,12 @@ import com.sefford.beauthentic.auth.strategies.GoogleStrategy;
 import com.sefford.beauthentic.auth.strategies.PasswordStrategy;
 
 /**
- * Created by sefford on 20/03/16.
+ * Authenticates BeAuthentic accounts.
+ *
+ * Take into account that there are two ways to validate an account, throught the "jtkirk/kmaru"
+ * credentials and via Google Sign-In.
+ *
+ * @author Saúl Díaz González <sefford@gmail.com>
  */
 public class AuthenticAuthenticator extends AbstractAccountAuthenticator {
 

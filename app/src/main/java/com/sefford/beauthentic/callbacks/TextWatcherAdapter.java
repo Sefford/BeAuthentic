@@ -13,25 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sefford.beauthentic.model;
+package com.sefford.beauthentic.callbacks;
 
-import com.google.gson.annotations.SerializedName;
+import android.text.Editable;
+import android.text.TextWatcher;
 
 /**
- * Dynamic body for sending GCM texts
+ * Adapter for TextWatcher
  *
  * @author Saúl Díaz González <sefford@gmail.com>
  */
-public class GCMBody {
+public class TextWatcherAdapter implements TextWatcher {
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
-    @SerializedName("to")
-    final String to;
-    @SerializedName("data")
-    final Object payload;
+    }
 
+    @Override
+    public void onTextChanged(CharSequence s, int start, int before, int count) {
 
-    public GCMBody(String to, Object payload) {
-        this.to = to;
-        this.payload = payload;
+    }
+
+    @Override
+    public void afterTextChanged(Editable s) {
+
     }
 }

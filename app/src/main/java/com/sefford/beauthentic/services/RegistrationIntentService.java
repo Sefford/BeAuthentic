@@ -28,8 +28,7 @@ import android.util.Log;
 
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
-import com.firebase.client.FirebaseError;
-import com.firebase.client.ValueEventListener;
+import com.sefford.beauthentic.callbacks.ValueEventListenerAdapter;
 import com.sefford.beauthentic.utils.Constants;
 import com.sefford.beauthentic.utils.GCMUtils;
 import com.sefford.beauthentic.utils.Hasher;
@@ -38,6 +37,12 @@ import com.sefford.beauthentic.utils.Sessions;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Service that refreshes the registration to the GCM server and uploads the device token into the
+ * firebase database.
+ *
+ * @author Saúl Díaz González <sefford@gmail.com>
+ */
 public class RegistrationIntentService extends IntentService {
 
     private static final String TAG = "RegIntentService";
@@ -91,7 +96,7 @@ public class RegistrationIntentService extends IntentService {
         if (primaryAccount != null) {
             final Firebase firebase = new Firebase(Constants.FIREBASE_USER_URL + Hasher.hash(primaryAccount.name));
             final Firebase devices = firebase.child("devices");
-            devices.addListenerForSingleValueEvent(new ValueEventListener() {
+            devices.addListenerForSingleValueEvent(new ValueEventListenerAdapter() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
                     if (!snapshot.exists()) {
@@ -103,11 +108,6 @@ public class RegistrationIntentService extends IntentService {
                             devices.setValue(firebaseDevices);
                         }
                     }
-                }
-
-                @Override
-                public void onCancelled(FirebaseError firebaseError) {
-
                 }
             });
         }

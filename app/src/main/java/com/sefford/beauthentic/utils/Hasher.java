@@ -19,7 +19,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * Created by sefford on 23/03/16.
+ * MDS Hasher so I don't need to store the email directly.
+ *
+ * @author Saúl Díaz González <sefford@gmail.com>
  */
 public class Hasher {
 

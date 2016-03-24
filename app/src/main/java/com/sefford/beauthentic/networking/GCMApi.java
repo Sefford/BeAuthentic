@@ -22,7 +22,9 @@ import retrofit2.http.Body;
 import retrofit2.http.POST;
 
 /**
- * Created by sefford on 23/03/16.
+ * API for communicating with HTTP GCM Server
+ *
+ * @author Saúl Díaz González <sefford@gmail.com>
  */
 public interface GCMApi {
 

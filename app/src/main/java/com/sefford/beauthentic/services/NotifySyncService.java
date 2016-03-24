@@ -19,34 +19,30 @@ import android.content.Intent;
 import android.support.annotation.NonNull;
 
 import com.sefford.beauthentic.model.GCMBody;
-import com.sefford.beauthentic.model.LoginPayload;
+import com.sefford.beauthentic.model.SyncPayload;
 
 /**
- * Created by sefford on 23/03/16.
+ * Service that notifies GCM that the clients would need to sync
+ *
+ * @author Saúl Díaz González <sefford@gmail.com>
  */
-public class LoginGCMNotificationService extends GcmNotificationService {
+public class NotifySyncService extends GcmNotificationService {
 
-    private static final String TAG = "GCMLogin";
+    private static final String TAG = "NotifySyncService";
 
-    public static final String EXTRA_NAME = "extra_name";
-    public static final String EXTRA_PASSWORD = "extra_password";
-    public static final String EXTRA_TYPE = "extra_type";
-    public static final String EXTRA_AUTHTOKEN = "extra_authtoken";
+    public static final String EXTRA_SYNC = "extra_sync";
 
     /**
      * Creates an IntentService.  Invoked by your subclass's constructor.
      */
-    public LoginGCMNotificationService() {
+    public NotifySyncService() {
         super(TAG);
     }
 
     @NonNull
     @Override
     protected GCMBody getPayload(String token, Intent intent) {
-        return new GCMBody(token, new LoginPayload(intent.getIntExtra(EXTRA_TYPE, 0),
-                intent.getStringExtra(EXTRA_NAME),
-                intent.getStringExtra(EXTRA_PASSWORD),
-                intent.getStringExtra(EXTRA_AUTHTOKEN)));
+        return new GCMBody(token, new SyncPayload());
     }
 
     @Override
