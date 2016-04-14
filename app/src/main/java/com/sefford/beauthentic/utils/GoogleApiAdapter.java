@@ -30,6 +30,7 @@ import com.google.android.gms.auth.api.credentials.IdentityProviders;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.OptionalPendingResult;
 import com.google.android.gms.common.api.ResultCallback;
@@ -124,6 +125,8 @@ public class GoogleApiAdapter implements GoogleApiClient.ConnectionCallbacks, Go
     public void saveCredential(Credential credential, ResultCallback<? super Status> callback) {
         if (isClientAvailable()) {
             Auth.CredentialsApi.save(client, credential).setResultCallback(callback);
+        } else {
+            callback.onResult(new Status(CommonStatusCodes.SUCCESS));
         }
     }
 

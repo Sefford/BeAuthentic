@@ -18,8 +18,6 @@ package com.sefford.beauthentic.services;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
-import android.accounts.AccountManagerCallback;
-import android.accounts.AccountManagerFuture;
 import android.accounts.AuthenticatorException;
 import android.accounts.OperationCanceledException;
 import android.content.ContentResolver;
@@ -68,27 +66,24 @@ public class PushService extends GcmListenerService {
                 final int loginType = Integer.valueOf(data.get(LoginGCMNotificationService.EXTRA_TYPE).toString());
                 authData.putInt(AuthenticAuthenticator.EXTRA_TYPE, loginType);
                 authData.putString(AuthenticAuthenticator.EXTRA_PASSWORD, data.getString(LoginGCMNotificationService.EXTRA_PASSWORD));
-                am.confirmCredentials(account, authData, null, new AccountManagerCallback<Bundle>() {
-                    @Override
-                    public void run(AccountManagerFuture<Bundle> future) {
-                        try {
-                            final Bundle result = future.getResult();
-                            if (result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)) {
-                                Sessions.addAccount(am, account, data.getString(LoginGCMNotificationService.EXTRA_PASSWORD), Bundle.EMPTY);
-                                am.setUserData(account, AuthenticAuthenticator.EXTRA_TYPE, Integer.toString(loginType));
-                                Intent intent = new Intent(getApplicationContext(), LoggedActivity.class);
-                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(intent);
-                            }
-                        } catch (OperationCanceledException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } catch (AuthenticatorException e) {
-                            e.printStackTrace();
-                        }
+
+                try {
+                    final Bundle result = am.confirmCredentials(account, authData, null, null, null).getResult();
+                    if (result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)) {
+                        Sessions.addAccount(am, account, data.getString(LoginGCMNotificationService.EXTRA_PASSWORD), Bundle.EMPTY);
+                        am.setUserData(account, AuthenticAuthenticator.EXTRA_TYPE, Integer.toString(loginType));
+                        Intent intent = new Intent(getApplicationContext(), LoggedActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent);
                     }
-                }, null);
+                } catch (OperationCanceledException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (AuthenticatorException e) {
+                    e.printStackTrace();
+                }
+
             }
         }
     }

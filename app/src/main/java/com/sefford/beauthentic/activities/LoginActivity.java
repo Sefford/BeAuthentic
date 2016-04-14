@@ -261,7 +261,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         data.putString(AuthenticAuthenticator.EXTRA_PASSWORD, etPassword.getText().toString());
         data.putInt(AuthenticAuthenticator.EXTRA_TYPE, AuthenticAuthenticator.Type.PASSWORD.ordinal());
         final Account account = new Account(etUsername.getText().toString(), AuthenticAuthenticator.ACCOUNT_TYPE);
-        am.confirmCredentials(account, data, null, new AccountManagerCallback<Bundle>() {
+        am.getAuthToken(account, "", data, true, new AccountManagerCallback<Bundle>() {
             @Override
             public void run(AccountManagerFuture<Bundle> future) {
                 try {

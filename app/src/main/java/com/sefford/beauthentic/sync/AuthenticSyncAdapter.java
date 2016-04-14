@@ -53,11 +53,10 @@ public class AuthenticSyncAdapter extends AbstractThreadedSyncAdapter {
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, final SyncResult syncResult) {
         final Account primaryAccount = Sessions.getPrimaryPhoneAccount(AccountManager.get(getContext()));
         if (primaryAccount != null) {
-            final Firebase firebase = new Firebase(Constants.FIREBASE_USER_URL + Hasher.hash(primaryAccount.name));
-            final Firebase message = firebase.child("message");
-            message.addListenerForSingleValueEvent(new ValueEventListenerAdapter() {
+            retrieveMessageFromFirebase(primaryAccount, new ValueEventListenerAdapter() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
+                    syncResult.stats.numUpdates++;
                     final Intent intent = new Intent(LoggedActivity.ACTION_REFRESH);
                     intent.putExtra(LoggedActivity.EXTRA_MESSAGE, TextUtils.isEmpty(snapshot.getValue().toString()) ? "" : snapshot.getValue().toString());
                     getContext().sendBroadcast(intent);
@@ -69,6 +68,11 @@ public class AuthenticSyncAdapter extends AbstractThreadedSyncAdapter {
                 }
             });
         }
-        syncResult.stats.numUpdates++;
+    }
+
+    private void retrieveMessageFromFirebase(Account primaryAccount, ValueEventListenerAdapter listener) {
+        final Firebase firebase = new Firebase(Constants.FIREBASE_USER_URL + Hasher.hash(primaryAccount.name));
+        final Firebase message = firebase.child("message");
+        message.addListenerForSingleValueEvent(listener);
     }
 }

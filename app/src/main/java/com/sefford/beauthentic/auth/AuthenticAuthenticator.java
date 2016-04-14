@@ -31,7 +31,7 @@ import com.sefford.beauthentic.auth.strategies.PasswordStrategy;
 
 /**
  * Authenticates BeAuthentic accounts.
- *
+ * <p/>
  * Take into account that there are two ways to validate an account, throught the "jtkirk/kmaru"
  * credentials and via Google Sign-In.
  *
@@ -76,10 +76,10 @@ public class AuthenticAuthenticator extends AbstractAccountAuthenticator {
 
         // The token has been invalidated but we have the password
         final Strategy strategy = selectLoginStrategy(Type.values()[options.getInt(EXTRA_TYPE)]);
-        if (TextUtils.isEmpty(authToken) && strategy.validatePassword(am.getPassword(account))) {
+        if (TextUtils.isEmpty(authToken) && strategy.validatePassword(TextUtils.isEmpty(am.getPassword(account)) ? options.getString(EXTRA_PASSWORD) : am.getPassword(account))) {
             final Bundle data = new Bundle();
             data.putInt(EXTRA_TYPE, options.getInt(EXTRA_TYPE));
-            data.putString(EXTRA_PASSWORD, am.getPassword(account));
+            data.putString(EXTRA_PASSWORD, TextUtils.isEmpty(am.getPassword(account)) ? options.getString(EXTRA_PASSWORD) : am.getPassword(account));
 
             // In this case we try to re-sign in to obtain the authtoken
             final Bundle results = confirmCredentials(response, account, data);
