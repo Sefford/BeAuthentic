@@ -1,18 +1,16 @@
 {
   "project_info": {
-    "project_id": "beauthentic-c35f2",
     "project_number": "670097636358",
-    "name": "BeAuthentic"
+    "firebase_url": "https://beauthentic-c35f2.firebaseio.com",
+    "project_id": "beauthentic-c35f2",
+    "storage_bucket": "beauthentic-c35f2.appspot.com"
   },
   "client": [
     {
       "client_info": {
         "mobilesdk_app_id": "1:670097636358:android:94bbbbe0846dd8ab",
-        "client_id": "android:com.sefford.beauthentic",
-        "client_type": 1,
         "android_client_info": {
-          "package_name": "com.sefford.beauthentic",
-          "certificate_hash": []
+          "package_name": "com.sefford.beauthentic"
         }
       },
       "oauth_client": [
@@ -25,32 +23,37 @@
           }
         },
         {
+          "client_id": "670097636358-iveghkhis0auf8amb2uuf2qmf904u2o9.apps.googleusercontent.com",
+          "client_type": 3
+        },
+        {
           "client_id": "670097636358-oi7ac0j1q2vk3oa3475bfjdcd1cojsa9.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
-      "api_key": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDkHuvfGO-CipPtrrPajPyZ4Y2X4hU6vaQ"
+        }
+      ],
       "services": {
         "analytics_service": {
           "status": 1
         },
-        "cloud_messaging_service": {
-          "status": 2,
-          "apns_config": []
-        },
         "appinvite_service": {
-          "status": 1,
-          "other_platform_oauth_client": []
-        },
-        "google_signin_service": {
-          "status": 2
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "670097636358-iveghkhis0auf8amb2uuf2qmf904u2o9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         },
         "ads_service": {
-          "status": 1
+          "status": 2
         }
       }
     }
   ],
-  "client_info": [],
-  "ARTIFACT_VERSION": "1"
+  "configuration_version": "1"
 }

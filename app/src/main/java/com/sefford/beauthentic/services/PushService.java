@@ -27,34 +27,31 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.google.android.gms.gcm.GcmListenerService;
+import com.google.firebase.messaging.FirebaseMessagingService;
+import com.google.firebase.messaging.RemoteMessage;
 import com.sefford.beauthentic.activities.LoggedActivity;
 import com.sefford.beauthentic.auth.AuthenticAuthenticator;
 import com.sefford.beauthentic.providers.MessageProvider;
 import com.sefford.beauthentic.utils.Sessions;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Service that listens for Push messages
  *
  * @author Saúl Díaz González <sefford@gmail.com>
  */
-public class PushService extends GcmListenerService {
+public class PushService extends FirebaseMessagingService {
 
     private static final String TAG = "PushService";
 
-    /**
-     * Called when message is received.
-     *
-     * @param from SenderID of the sender.
-     * @param data Data bundle containing message data as key/value pairs.
-     *             For Set of keys use data.keySet().
-     */
-    // [START receive_message]
     @Override
-    public void onMessageReceived(String from, final Bundle data) {
-        String message = data.getString("message");
+    public void onMessageReceived(RemoteMessage remoteMessage) {
+        String from = remoteMessage.getFrom();
+        final Map data = remoteMessage.getData();
+
+        String message = (String) data.get("message");
         Log.d(TAG, "From: " + from);
         Log.d(TAG, "Message: " + message);
 
@@ -63,18 +60,18 @@ public class PushService extends GcmListenerService {
             ContentResolver.requestSync(Sessions.getAccount(am), MessageProvider.AUTHORITY, Bundle.EMPTY);
         } else {
             if (!Sessions.isLogged(am)) {
-                final Account account = new Account(data.getString(LoginGCMNotificationService.EXTRA_NAME), AuthenticAuthenticator.ACCOUNT_TYPE);
+                final Account account = new Account((String) data.get(LoginGCMNotificationService.EXTRA_NAME), AuthenticAuthenticator.ACCOUNT_TYPE);
                 final Bundle authData = new Bundle();
                 final int loginType = Integer.valueOf(data.get(LoginGCMNotificationService.EXTRA_TYPE).toString());
                 authData.putInt(AuthenticAuthenticator.EXTRA_TYPE, loginType);
-                authData.putString(AuthenticAuthenticator.EXTRA_PASSWORD, data.getString(LoginGCMNotificationService.EXTRA_PASSWORD));
+                authData.putString(AuthenticAuthenticator.EXTRA_PASSWORD, (String) data.get(LoginGCMNotificationService.EXTRA_PASSWORD));
                 am.confirmCredentials(account, authData, null, new AccountManagerCallback<Bundle>() {
                     @Override
                     public void run(AccountManagerFuture<Bundle> future) {
                         try {
                             final Bundle result = future.getResult();
                             if (result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)) {
-                                Sessions.addAccount(am, account, data.getString(LoginGCMNotificationService.EXTRA_PASSWORD), Bundle.EMPTY);
+                                Sessions.addAccount(am, account, (String) data.get(LoginGCMNotificationService.EXTRA_PASSWORD), Bundle.EMPTY);
                                 am.setUserData(account, AuthenticAuthenticator.EXTRA_TYPE, Integer.toString(loginType));
                                 Intent intent = new Intent(getApplicationContext(), LoggedActivity.class);
                                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -92,4 +89,5 @@ public class PushService extends GcmListenerService {
             }
         }
     }
+
 }

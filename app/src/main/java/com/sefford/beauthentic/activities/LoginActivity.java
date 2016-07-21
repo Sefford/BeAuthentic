@@ -35,6 +35,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
@@ -58,6 +60,7 @@ import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.sefford.beauthentic.R;
 import com.sefford.beauthentic.auth.AuthenticAuthenticator;
 import com.sefford.beauthentic.callbacks.ValueEventListenerAdapter;
@@ -90,8 +93,6 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
     View pbProgress;
     @Bind(R.id.v_login_form)
     View vLoginForm;
-    @Bind(R.id.bt_login)
-    View btLogin;
     @Bind(R.id.bt_google_sign)
     SignInButton btGoogleSign;
 
@@ -122,6 +123,16 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         ButterKnife.bind(this);
         configureView();
         checkPermissions();
+        final NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+
+        final NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
+                .setContentTitle("Update 2.0.6 available")
+                .setContentText("Now you can mail your favorite artists!")
+                .setSmallIcon(R.drawable.common_plus_signin_btn_text_light_pressed)
+                .setColor(getResources().getColor(R.color.colorPrimary))
+                .setLights(getResources().getColor(R.color.colorPrimary), 1000, 1000);
+
+        notificationManager.notify(0x1234, builder.build());
     }
 
     void configureView() {
@@ -204,6 +215,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
 
     @OnClick(R.id.bt_google_sign)
     public void onGoogleLoginClicked() {
+        logAttemptedLogin("google");
         showProgress(true);
         googleApi.performGoogleSignIn(this);
     }
@@ -214,6 +226,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
      * errors are presented and no actual login attempt is made.
      */
     void attemptLogin() {
+        logAttemptedLogin("google");
         // Reset errors.
         etUsername.setError(null);
         etPassword.setError(null);
@@ -271,6 +284,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                         am.setAuthToken(account, AuthenticAuthenticator.AUTHTOKEN_TYPE, result.getString(AccountManager.KEY_AUTHTOKEN));
                         am.setUserData(account, AuthenticAuthenticator.EXTRA_TYPE, Integer.toString(AuthenticAuthenticator.Type.PASSWORD.ordinal()));
                         notifyLoginToGCM(AuthenticAuthenticator.Type.PASSWORD.ordinal(), account.name, etPassword.getText().toString(), result.getString(AccountManager.KEY_AUTHTOKEN));
+                        logLogin("email");
                         googleApi.saveCredential(new Credential.Builder(account.name)
                                         .setPassword(etPassword.getText().toString()).build(),
                                 new SmartlockCredentialCallback());
@@ -401,6 +415,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                         am.setAuthToken(account, AuthenticAuthenticator.AUTHTOKEN_TYPE, result.getString(AccountManager.KEY_AUTHTOKEN));
                         am.setUserData(account, AuthenticAuthenticator.EXTRA_TYPE, Integer.toString(AuthenticAuthenticator.Type.GOOGLE.ordinal()));
                         notifyLoginToGCM(AuthenticAuthenticator.Type.GOOGLE.ordinal(), account.name, "", result.getString(AccountManager.KEY_AUTHTOKEN));
+                        logLogin("google");
                         googleApi.saveCredential(new Credential.Builder(acct.getEmail())
                                 .setAccountType(IdentityProviders.GOOGLE)
                                 .setName(acct.getDisplayName())
@@ -498,6 +513,20 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                 }
             }
         }
+    }
+
+    void logAttemptedLogin(String type) {
+        final FirebaseAnalytics analytics = FirebaseAnalytics.getInstance(this);
+        final Bundle bundle = new Bundle();
+        bundle.putString("type", type);
+        analytics.logEvent("attempt_login", bundle);
+    }
+
+    void logLogin(String type) {
+        final FirebaseAnalytics analytics = FirebaseAnalytics.getInstance(this);
+        final Bundle bundle = new Bundle();
+        bundle.putString("type", type);
+        analytics.logEvent("login_completed", bundle);
     }
 }
 

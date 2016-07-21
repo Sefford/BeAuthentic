@@ -17,11 +17,7 @@ package com.sefford.beauthentic.utils;
 
 import android.content.Context;
 
-import com.google.android.gms.gcm.GoogleCloudMessaging;
-import com.google.android.gms.iid.InstanceID;
-import com.sefford.beauthentic.R;
-
-import java.io.IOException;
+import com.google.firebase.iid.FirebaseInstanceId;
 
 /**
  * Small util to retrieve the Token
@@ -33,13 +29,7 @@ public class GCMUtils {
     private GCMUtils() {
     }
 
-    public static String getGCMToken(Context context) {
-        final InstanceID instanceID = InstanceID.getInstance(context);
-        try {
-            return instanceID.getToken(context.getString(R.string.gcm_defaultSenderId),
-                    GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
-        } catch (IOException e) {
-            return "";
-        }
+    public static String getGCMToken() {
+        return FirebaseInstanceId.getInstance().getToken();
     }
 }

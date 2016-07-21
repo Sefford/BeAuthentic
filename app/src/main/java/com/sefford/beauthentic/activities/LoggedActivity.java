@@ -38,6 +38,7 @@ import android.widget.TextView;
 
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.sefford.beauthentic.R;
 import com.sefford.beauthentic.auth.AuthenticAuthenticator;
 import com.sefford.beauthentic.callbacks.TextWatcherAdapter;
@@ -139,6 +140,7 @@ public class LoggedActivity extends AppCompatActivity implements Handler.Callbac
 
     @OnClick(R.id.bt_invalidate)
     public void onAuthTokenInvalidated() {
+        logButtonPressed("invalidate_authtoken_pressed");
         if (!TextUtils.isEmpty(am.peekAuthToken(Sessions.getAccount(am), AuthenticAuthenticator.AUTHTOKEN_TYPE))) {
             am.invalidateAuthToken(AuthenticAuthenticator.ACCOUNT_TYPE, am.peekAuthToken(Sessions.getAccount(am), AuthenticAuthenticator.AUTHTOKEN_TYPE));
             tvStatus.setText(R.string.status_invalidated);
@@ -153,6 +155,7 @@ public class LoggedActivity extends AppCompatActivity implements Handler.Callbac
 
     @OnClick(R.id.bt_refresh)
     public void onGettingAuthToken() {
+        logButtonPressed("getting_authtoken_pressed");
         if (Sessions.isLogged(am)) {
             final Bundle data = new Bundle();
             data.putInt(AuthenticAuthenticator.EXTRA_TYPE, Integer.valueOf(am.getUserData(Sessions.getAccount(am), AuthenticAuthenticator.EXTRA_TYPE)));
@@ -183,6 +186,7 @@ public class LoggedActivity extends AppCompatActivity implements Handler.Callbac
 
     @OnClick(R.id.bt_logout)
     public void onLoggingOut() {
+        logButtonPressed("logout_pressed");
         am.removeAccount(Sessions.getAccount(am), new AccountManagerCallback<Boolean>() {
             @Override
             public void run(AccountManagerFuture<Boolean> future) {
@@ -197,6 +201,7 @@ public class LoggedActivity extends AppCompatActivity implements Handler.Callbac
         if (primaryAccount != null) {
             final Firebase firebase = new Firebase(Constants.FIREBASE_USER_URL + Hasher.hash(primaryAccount.name));
             final Firebase message = firebase.child("message");
+            logMessageChanged();
             message.setValue(etSyncable.getText().toString());
             orderSync();
         }
@@ -222,5 +227,17 @@ public class LoggedActivity extends AppCompatActivity implements Handler.Callbac
                 }
             });
         }
+    }
+
+    void logMessageChanged() {
+        final FirebaseAnalytics analytics = FirebaseAnalytics.getInstance(this);
+        final Bundle bundle = new Bundle();
+        analytics.logEvent("message_changed", bundle);
+    }
+
+    void logButtonPressed(String button) {
+        final FirebaseAnalytics analytics = FirebaseAnalytics.getInstance(this);
+        final Bundle bundle = new Bundle();
+        analytics.logEvent(button, bundle);
     }
 }

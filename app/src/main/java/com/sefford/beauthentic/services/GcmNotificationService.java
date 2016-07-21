@@ -49,7 +49,7 @@ public abstract class GcmNotificationService extends IntentService {
     @Override
     protected void onHandleIntent(final Intent intent) {
         final GCMApi api = intializeApi();
-        final String currentDevice = GCMUtils.getGCMToken(this);
+        final String currentDevice = GCMUtils.getGCMToken();
 
         for (String token : intent.getStringArrayListExtra(EXTRA_DEVICES)) {
             if (!token.equals(currentDevice)) {
