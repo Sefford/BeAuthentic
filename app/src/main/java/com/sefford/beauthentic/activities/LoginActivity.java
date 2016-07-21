@@ -35,11 +35,10 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -60,7 +59,11 @@ import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.analytics.FirebaseAnalytics;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 import com.sefford.beauthentic.R;
 import com.sefford.beauthentic.auth.AuthenticAuthenticator;
 import com.sefford.beauthentic.callbacks.ValueEventListenerAdapter;
@@ -84,6 +87,7 @@ import butterknife.OnClick;
 public class LoginActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks {
 
     private static final int REQUEST_PERMISSION = 0x13;
+    private static final String TAG = "LoginActivity";
 
     @Bind(R.id.et_email)
     AutoCompleteTextView etUsername;
@@ -123,6 +127,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         ButterKnife.bind(this);
         configureView();
         checkPermissions();
+        activateRemoteConfig();
     }
 
     void configureView() {
@@ -148,6 +153,37 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         } else {
             refreshGCMToken();
         }
+    }
+
+    void activateRemoteConfig() {
+        final FirebaseRemoteConfig firebase = FirebaseRemoteConfig.getInstance();
+        FirebaseRemoteConfigSettings configSettings = new
+                FirebaseRemoteConfigSettings.Builder()
+                .setDeveloperModeEnabled(true)
+                .build();
+        firebase.setConfigSettings(configSettings);
+        firebase.fetch()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Log.d(TAG, "Fetch Succeeded");
+                        // Once the config is successfully fetched it must be activated before newly fetched
+                        // values are returned.
+                        firebase.activateFetched();
+                        // Set A/B Values
+                        if (btGoogleSign != null) {
+                            btGoogleSign.setVisibility(firebase.getBoolean("google_sign_in") ? View.VISIBLE : View.GONE);
+                        }
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception exception) {
+                        Log.d(TAG, "Fetch failed");
+                        // Set default values
+                    }
+                });
+
     }
 
     void handleAccountIntent(Intent intent) {

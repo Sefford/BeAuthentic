@@ -45,6 +45,8 @@ dependencies {
     compile 'com.google.android.gms:play-services-auth:9.2.1'
     compile "com.google.firebase:firebase-messaging:9.2.1"
     compile 'com.google.firebase:firebase-core:9.2.1'
+    compile 'com.google.firebase:firebase-crash:9.2.1'
+    compile 'com.google.firebase:firebase-config:9.2.1'
     compile 'com.firebase:firebase-client-android:2.5.1+'
     compile 'com.squareup.retrofit2:retrofit:2.0.0'
     compile 'com.squareup.okhttp3:logging-interceptor:3.2.0'
