@@ -123,16 +123,6 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         ButterKnife.bind(this);
         configureView();
         checkPermissions();
-        final NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-
-        final NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
-                .setContentTitle("Update 2.0.6 available")
-                .setContentText("Now you can mail your favorite artists!")
-                .setSmallIcon(R.drawable.common_plus_signin_btn_text_light_pressed)
-                .setColor(getResources().getColor(R.color.colorPrimary))
-                .setLights(getResources().getColor(R.color.colorPrimary), 1000, 1000);
-
-        notificationManager.notify(0x1234, builder.build());
     }
 
     void configureView() {
