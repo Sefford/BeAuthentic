@@ -29,6 +29,7 @@ import android.annotation.TargetApi;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -40,14 +41,19 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
+import com.google.android.gms.appinvite.AppInviteInvitation;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.credentials.Credential;
 import com.google.android.gms.auth.api.credentials.CredentialRequestResult;
@@ -87,6 +93,7 @@ import butterknife.OnClick;
 public class LoginActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks {
 
     private static final int REQUEST_PERMISSION = 0x13;
+    private static final int REQUEST_INVITE = 0x14;
     private static final String TAG = "LoginActivity";
 
     @Bind(R.id.et_email)
@@ -223,8 +230,29 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
             case REQUEST_PERMISSION:
                 refreshGCMToken();
                 break;
+            case REQUEST_INVITE:
+                Toast.makeText(this, "Invitations Sent", Toast.LENGTH_LONG);
+                break;
 
         }
+    }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.login, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        final Intent intent = new AppInviteInvitation.IntentBuilder("Invite users to BeAuthentic")
+                .setMessage("BeAuthentic is the ultimate demo app")
+                .setDeepLink(Uri.parse("http://beauthentic.com/"))
+                .build();
+        startActivityForResult(intent, REQUEST_INVITE);
+        return true;
     }
 
     @Override
